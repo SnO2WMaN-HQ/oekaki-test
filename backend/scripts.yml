@@ -1,0 +1,8 @@
+scripts:
+  dev:
+    desc: Run dev server
+    cmd: deno run --allow-env=PORT --allow-net --watch ./src/main.ts
+
+  compile:
+    desc: Compile server
+    cmd: deno compile --allow-env=PORT --allow-net -o ./bin/main ./src/main.ts
