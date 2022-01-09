@@ -1,28 +1,26 @@
 import { bold, yellow } from "https://deno.land/std@0.118.0/fmt/colors.ts";
 import { oakCors } from "https://deno.land/x/cors@v1.2.2/mod.ts";
 import { Application, Router } from "https://deno.land/x/oak/mod.ts";
+import { Room } from "./room.ts";
 
 const app = new Application();
 const router = new Router();
 
-const sockets = new Set<WebSocket>();
+const rooms = new Map<string, Room>();
 
-router.get("/random", async (context) => {
-  const socket = await context.upgrade();
-  socket.addEventListener("open", () => {
-    sockets.add(socket);
-  });
-  socket.addEventListener("close", () => {
-    sockets.delete(socket);
-  });
-  socket.addEventListener("message", (event) => {
-    const data = JSON.parse(event.data);
-    if (data.type === "DRAW") {
-      sockets.forEach((s) => {
-        s.send(JSON.stringify({ type: "DRAWED", payload: data.payload }));
-      });
-    }
-  });
+router.get("/rooms", async (context) => {
+  const roomId = context.request.url.searchParams.get("roomId");
+  const userId = context.request.url.searchParams.get("userId");
+
+  if (!roomId || !userId) {
+    return; // TODO: WebSocektの例外処理
+  }
+
+  const room = rooms.get(roomId) || new Room(roomId);
+  rooms.set(roomId, room);
+
+  const ws = await context.upgrade();
+  room.addSocket(ws, userId);
 });
 
 app.use(oakCors());
